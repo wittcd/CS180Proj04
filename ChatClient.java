@@ -78,9 +78,27 @@ final class ChatClient {
      */
     public static void main(String[] args) {
         // Get proper arguments and override defaults
+        String server = "localhost";
+        int port = 1500;
+        String userName = "CS 180 Student";
+
+        if (args.length >= 1) {
+            userName = args[0];
+        }
+        if (args.length >= 2) {
+            try {
+                int p = Integer.parseInt(args[1]);
+                port = p;
+            } catch (Exception e) {
+                port = 1500;
+            }
+        }
+        if (args.length == 3) {
+            server = args[2];
+        }
 
         // Create your client and start it
-        ChatClient client = new ChatClient("localhost", 1500, "CS 180 Student");
+        ChatClient client = new ChatClient(server, port, userName);
         client.start();
 
         // Send an empty message to the server
