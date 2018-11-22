@@ -1,15 +1,30 @@
+
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.text.SimpleDateFormat;
 
 final class ChatServer {
     private static int uniqueId = 0;
     private final List<ClientThread> clients = new ArrayList<>();
     private final int port;
+
+    //TODO
+    // - WriteMessage in ClientThread
+    // = Remove in ChatServer
+    // = Close
+    // - Error handling
+    // - chat filtering
+    // - personal messages
+    // - list
+
 
 
     private ChatServer(int port) {
@@ -50,10 +65,19 @@ final class ChatServer {
                 port = 1500;
             }
         }
-        ChatServer server = new ChatServer(1500);
+        ChatServer server = new ChatServer(port);
         server.start();
     }
 
+    private synchronized void broadcast(String message) {
+        for (int x = 0; x < clients.size(); x++) {
+            try {
+                clients.get(x).sOutput.writeObject(message);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     /*
      * This is a private class inside of the ChatServer
@@ -85,19 +109,28 @@ final class ChatServer {
         @Override
         public void run() {
             // Read the username sent to you by client
-            try {
-                cm = (ChatMessage) sInput.readObject();
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-            System.out.println(username + ": Ping");
+            while (true) {
+                try {
+                    cm = (ChatMessage) sInput.readObject();
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+                if (cm.getMessage().toLowerCase().equals("/logout")) {
+                    break;
+                } else {
+                    SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
+                    Date d = new Date();
+                    String time = f.format(d);
+                    broadcast(time + " " + username + ": " + cm.getMessage());
+                    System.out.println(time + " " + username + ": " + cm.getMessage());
+                }
 
-
-            // Send message back to the client
-            try {
-                sOutput.writeObject("Pong");
-            } catch (IOException e) {
-                e.printStackTrace();
+                // Send message back to the client
+                /*try {
+                    sOutput.writeObject("Pong");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }*/
             }
         }
     }
