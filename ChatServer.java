@@ -1,5 +1,3 @@
-
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -17,10 +15,10 @@ final class ChatServer {
     private final int port;
 
     //TODO
-    // - WriteMessage in ClientThread
-    // = Remove in ChatServer
-    // = Close
-    // - Error handling
+    // - WriteMessage in ClientThread - Done, replaced the writing in the broadcast Method
+    // = Remove in ChatServer - Done
+    // = Close - Done
+    // - Error handling - Fixed error when client starts without server running, can't test Username handling right now so I'll get back to it later
     // - chat filtering
     // - personal messages
     // - list
@@ -64,20 +62,19 @@ final class ChatServer {
             } catch (Exception e) {
                 port = 1500;
             }
+        } else if (args.length == 2) {
+            try {
+                int p = Integer.parseInt(args[0]);
+                port = p;
+            } catch (Exception e) {
+                port = 1500;
+            }
+
         }
         ChatServer server = new ChatServer(port);
         server.start();
     }
 
-    private synchronized void broadcast(String message) {
-        for (int x = 0; x < clients.size(); x++) {
-            try {
-                clients.get(x).sOutput.writeObject(message);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
 
     /*
      * This is a private class inside of the ChatServer
@@ -102,6 +99,48 @@ final class ChatServer {
                 e.printStackTrace();
             }
         }
+        private synchronized void broadcast(String message) {
+            for (int x = 0; x < clients.size(); x++) {
+                try {
+                    clients.get(x).writeMessage(message);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        private synchronized void remove(int id) {
+            for (int i = 0; i < clients.size(); i++) {
+                if (clients.get(i).id == id) {
+                    clients.remove(i);
+                    break;
+                }
+            }
+        }
+
+        private void close() {
+            try {
+                sOutput.close();
+                sInput.close();
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+        private boolean writeMessage(String msg) {
+            if (!socket.isConnected()) {
+                return false;
+            } else {
+                try {
+                    sOutput.writeObject(msg);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return true;
+            }
+        }
 
         /*
          * This is what the client thread actually runs.
@@ -116,6 +155,8 @@ final class ChatServer {
                     e.printStackTrace();
                 }
                 if (cm.getMessage().toLowerCase().equals("/logout")) {
+                    remove(this.id);
+                    close();
                     break;
                 } else {
                     SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
