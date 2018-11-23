@@ -27,7 +27,8 @@ final class ChatClient {
         try {
             socket = new Socket(server, port);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("The specificed server doesn't exist, or the port is already in use!");
+            System.exit(0);
         }
 
         // Create your input and output streams
