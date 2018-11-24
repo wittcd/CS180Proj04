@@ -16,10 +16,7 @@ final class ChatServer {
     private final int port;
 
     //TODO
-    // - Error handling - 
     // - chat filtering
-    // - personal messages
-    // - list
 
     private ChatServer(int port) {
         this.port = port;
@@ -106,6 +103,10 @@ final class ChatServer {
                     }
                 }
                 username = name;
+                SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
+                Date d = new Date();
+                String time = f.format(d);
+                System.out.println(time + " " + username + " just connected");
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -174,11 +175,37 @@ final class ChatServer {
                     e.printStackTrace();
                 }
                 if (cm.getMessage().toLowerCase().equals("/logout")) {
+                    SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
+                    Date d = new Date();
+                    String time = f.format(d);
+                    System.out.println(time + " " + username + " disconnected with a LOGOUT message.");
                     remove(this.id);
                     close();
                     break;
                 } else if (cm.getMessage().toLowerCase().equals("/list")) {
                     list(this);
+                } else if (cm.getMessage().length() > 5 && cm.getMessage().toLowerCase().substring(0, 5).equals("/msg ")) {
+                    String[] s = cm.getMessage().split(" ");
+                    if (s.length >= 3) {
+                        SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
+                        Date d = new Date();
+                        String time = f.format(d);
+                        String recipient = s[1];
+                        String msg = "";
+                        for (int x = 2; x < s.length; x++) {
+                            msg += s[x];
+                            if (x < s.length - 1) {
+                                msg += " ";
+                            }
+                        }
+                        for (int x = 0; x < clients.size(); x++) {
+                            if (clients.get(x).username.equals(recipient)) {
+                                clients.get(x).writeMessage(time + " " + username + " -> " + recipient + ": " + msg);
+                                System.out.println(time + " " + username + " -> " + recipient + ": " + msg);
+                                this.writeMessage(time + " " + username + " -> " + recipient + ": " + msg);
+                            }
+                        }
+                    }
                 } else {
                     SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
                     Date d = new Date();
