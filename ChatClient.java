@@ -112,7 +112,7 @@ final class ChatClient {
             int type = 0;
             if (message.toLowerCase().equals("/logout")) {
                 type = 1;
-            } else if (message.toLowerCase().substring(0, 5).equals("/msg ")) {
+            } else if (message.length() > 5 && message.toLowerCase().substring(0, 5).equals("/msg ")) {
                 type = 2;
             }
             client.sendMessage(new ChatMessage(message, type));
