@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.LocalDateTime;
@@ -14,15 +13,19 @@ final class ChatServer {
     private static int uniqueId = 0;
     private final List<ClientThread> clients = new ArrayList<>();
     private final int port;
+    private String badwords;
 
     //TODO
     // - Error handling - Fixed error when client starts without server running, can't test Username handling right now so I'll get back to it later
-    // - chat filtering
+    // - chat filtering - Done, but can't figure out relative path for some reason
     // - personal messages
     // - list
 
-    private ChatServer(int port) {
+
+
+    private ChatServer(int port, String badwords) {
         this.port = port;
+        this.badwords = badwords;
     }
 
     /*
@@ -50,6 +53,7 @@ final class ChatServer {
      *  If the port number is not specified 1500 is used
      */
     public static void main(String[] args) {
+        String badwords = "C:\\Users\\justi\\IdeaProjects\\proj4\\src\\badwords.txt";
         int port = 1500;
         if (args.length == 1) {
             try {
@@ -65,13 +69,13 @@ final class ChatServer {
             } catch (Exception e) {
                 port = 1500;
             }
+            badwords = args[1];
 
         }
-        ChatServer server = new ChatServer(port);
+        ChatServer server = new ChatServer(port, badwords);
         server.start();
     }
 
-    
 
     /*
      * This is a private class inside of the ChatServer
@@ -96,6 +100,25 @@ final class ChatServer {
                 e.printStackTrace();
             }
         }
+        private synchronized void broadcast(String message) {
+            ChatFilter cf = new ChatFilter(badwords);
+            for (int x = 0; x < clients.size(); x++) {
+                try {
+                    clients.get(x).writeMessage(cf.filter(message));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        private synchronized void remove(int id) {
+            for (int i = 0; i < clients.size(); i++) {
+                if (clients.get(i).id == id) {
+                    clients.remove(i);
+                    break;
+                }
+            }
+        }
 
         private void close() {
             try {
@@ -107,37 +130,19 @@ final class ChatServer {
             }
         }
 
+
         private boolean writeMessage(String msg) {
-
-            if (socket.isClosed()) {
+            if (!socket.isConnected()) {
                 return false;
-            }
-            try {
-                sOutput.writeObject(msg);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return true;
-        }
-        
-        private synchronized void broadcast(String message) {
-            for (int x = 0; x < clients.size(); x++) {
-                boolean write = clients.get(x).writeMessage(message);
-                if (!write) {
-                    this.remove(x);
+            } else {
+                try {
+                    sOutput.writeObject(msg);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
+                return true;
             }
         }
-
-
-         private synchronized void remove(int id) {
-             for (int i = 0; i < clients.size(); i++) {
-                 if (clients.get(i).id == id) {
-                     clients.remove(i);
-                     break;
-                 }
-             }
-         }
 
         /*
          * This is what the client thread actually runs.
@@ -171,6 +176,5 @@ final class ChatServer {
                 }*/
             }
         }
-
     }
 }
