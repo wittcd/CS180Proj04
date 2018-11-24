@@ -16,7 +16,7 @@ final class ChatServer {
     private final int port;
 
     //TODO
-    // - Error handling - Fixed error when client starts without server running, can't test Username handling right now so I'll get back to it later
+    // - Error handling - 
     // - chat filtering
     // - personal messages
     // - list
@@ -71,7 +71,7 @@ final class ChatServer {
         server.start();
     }
 
-    
+
 
     /*
      * This is a private class inside of the ChatServer
@@ -92,6 +92,20 @@ final class ChatServer {
                 sOutput = new ObjectOutputStream(socket.getOutputStream());
                 sInput = new ObjectInputStream(socket.getInputStream());
                 username = (String) sInput.readObject();
+                boolean uniqueUser = false;
+                int c = 1;
+                String name = username;
+                while (!uniqueUser) {
+                    uniqueUser = true;
+                    for (int x = 0; x < clients.size(); x++) {
+                        if (clients.get(x).username.equals(name)) {
+                            uniqueUser = false;
+                            name = username + "(" + c + ")";
+                            c++;
+                        }
+                    }
+                }
+                username = name;
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -119,7 +133,7 @@ final class ChatServer {
             }
             return true;
         }
-        
+
         private synchronized void broadcast(String message) {
             for (int x = 0; x < clients.size(); x++) {
                 boolean write = clients.get(x).writeMessage(message);
@@ -130,14 +144,22 @@ final class ChatServer {
         }
 
 
-         private synchronized void remove(int id) {
-             for (int i = 0; i < clients.size(); i++) {
-                 if (clients.get(i).id == id) {
-                     clients.remove(i);
-                     break;
-                 }
-             }
-         }
+        private synchronized void remove(int id) {
+            for (int i = 0; i < clients.size(); i++) {
+                if (clients.get(i).id == id) {
+                    clients.remove(i);
+                    break;
+                }
+            }
+        }
+
+        private synchronized void list(ClientThread caller) {
+            for (int x = 0; x < clients.size(); x++) {
+                if (clients.get(x).id != caller.id) {
+                    caller.writeMessage(clients.get(x).username);
+                }
+            }
+        }
 
         /*
          * This is what the client thread actually runs.
@@ -155,6 +177,8 @@ final class ChatServer {
                     remove(this.id);
                     close();
                     break;
+                } else if (cm.getMessage().toLowerCase().equals("/list")) {
+                    list(this);
                 } else {
                     SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
                     Date d = new Date();
