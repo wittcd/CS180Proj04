@@ -71,24 +71,7 @@ final class ChatServer {
         server.start();
     }
 
-    private synchronized void broadcast(String message) {
-        for (int x = 0; x < clients.size(); x++) {
-            boolean write = clients.get(x).writeMessage(message);
-            if (!write) {
-                this.remove(x);
-            }
-        }
-    }
-
-
-        private synchronized void remove(int id) {
-            for (int i = 0; i < clients.size(); i++) {
-                if (clients.get(i).id == id) {
-                    clients.remove(i);
-                    break;
-                }
-            }
-        }
+    
 
     /*
      * This is a private class inside of the ChatServer
@@ -136,6 +119,25 @@ final class ChatServer {
             }
             return true;
         }
+        
+        private synchronized void broadcast(String message) {
+            for (int x = 0; x < clients.size(); x++) {
+                boolean write = clients.get(x).writeMessage(message);
+                if (!write) {
+                    this.remove(x);
+                }
+            }
+        }
+
+
+         private synchronized void remove(int id) {
+             for (int i = 0; i < clients.size(); i++) {
+                 if (clients.get(i).id == id) {
+                     clients.remove(i);
+                     break;
+                 }
+             }
+         }
 
         /*
          * This is what the client thread actually runs.
