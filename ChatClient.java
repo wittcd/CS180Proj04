@@ -3,6 +3,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Scanner;
+import java.util.ArrayList;
 
 final class ChatClient {
     private ObjectInputStream sInput;
@@ -98,7 +99,6 @@ final class ChatClient {
         if (args.length == 3) {
             server = args[2];
         }
-
         // Create your client and start it
         ChatClient client = new ChatClient(server, port, userName);
         client.start();
@@ -112,6 +112,8 @@ final class ChatClient {
             int type = 0;
             if (message.toLowerCase().equals("/logout")) {
                 type = 1;
+            } else if (message.toLowerCase().substring(0, 5).equals("/msg ")) {
+                type = 2;
             }
             client.sendMessage(new ChatMessage(message, type));
         }
