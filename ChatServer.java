@@ -1,8 +1,7 @@
-
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.LocalDateTime;
@@ -17,9 +16,6 @@ final class ChatServer {
     private final int port;
 
     //TODO
-    // - WriteMessage in ClientThread
-    // = Remove in ChatServer
-    // = Close
     // - Error handling
     // - chat filtering
     // - personal messages
@@ -71,11 +67,16 @@ final class ChatServer {
 
     private synchronized void broadcast(String message) {
         for (int x = 0; x < clients.size(); x++) {
-            try {
-                clients.get(x).sOutput.writeObject(message);
-            } catch (IOException e) {
-                e.printStackTrace();
+            boolean write = clients.get(x).writeMessage(message);
+            if (!write) {
+                this.remove(x);
             }
+        }
+    }
+
+    private synchronized void remove(int id) {
+        if (id < clients.size() && id >= 0) {
+            clients.remove(id);
         }
     }
 
@@ -103,6 +104,19 @@ final class ChatServer {
             }
         }
 
+        private boolean writeMessage(String msg) {
+
+            if (socket.isClosed()) {
+                return false;
+            }
+            try {
+                sOutput.writeObject(msg);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return true;
+        }
+
         /*
          * This is what the client thread actually runs.
          */
@@ -116,6 +130,7 @@ final class ChatServer {
                     e.printStackTrace();
                 }
                 if (cm.getMessage().toLowerCase().equals("/logout")) {
+                    this.close();
                     break;
                 } else {
                     SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
@@ -131,6 +146,15 @@ final class ChatServer {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }*/
+            }
+        }
+
+        public void close() {
+            try {
+                this.sOutput.close();
+                this.sInput.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
