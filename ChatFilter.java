@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 /**
  * ChatFilter class, called in ChatServer, filters all badwords from specified text file
- * @author Justin Chen, Collin Witt
+ * @author Justin Chen, Colin Witt
  * @version 1.0.0
  */
 public class ChatFilter {
