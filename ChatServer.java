@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.LocalDateTime;
@@ -14,12 +13,12 @@ final class ChatServer {
     private static int uniqueId = 0;
     private final List<ClientThread> clients = new ArrayList<>();
     private final int port;
+    private String badwords;
 
-    //TODO
-    // - chat filtering
 
-    private ChatServer(int port) {
+    private ChatServer(int port, String badwords) {
         this.port = port;
+        this.badwords = badwords;
     }
 
     /*
@@ -47,6 +46,7 @@ final class ChatServer {
      *  If the port number is not specified 1500 is used
      */
     public static void main(String[] args) {
+        String badwords = "C:\\Users\\justi\\IdeaProjects\\proj4\\src\\badwords.txt";
         int port = 1500;
         if (args.length == 1) {
             try {
@@ -62,13 +62,12 @@ final class ChatServer {
             } catch (Exception e) {
                 port = 1500;
             }
+            badwords = args[1];
 
         }
-        ChatServer server = new ChatServer(port);
+        ChatServer server = new ChatServer(port, badwords);
         server.start();
     }
-
-
 
     /*
      * This is a private class inside of the ChatServer
@@ -122,10 +121,11 @@ final class ChatServer {
             }
         }
 
-        private boolean writeMessage(String msg) {
 
-            if (socket.isClosed()) {
+        private boolean writeMessage(String msg) {
+            if (!socket.isConnected()) {
                 return false;
+
             }
             try {
                 sOutput.writeObject(msg);
@@ -141,8 +141,10 @@ final class ChatServer {
                 if (!write) {
                     this.remove(x);
                 }
+                return true;
             }
         }
+
 
 
         private synchronized void remove(int id) {
@@ -222,6 +224,5 @@ final class ChatServer {
                 }*/
             }
         }
-
     }
 }
