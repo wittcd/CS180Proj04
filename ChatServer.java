@@ -9,6 +9,12 @@ import java.util.Date;
 import java.util.List;
 import java.text.SimpleDateFormat;
 
+/**
+ * Chat Server class, hosts chat clients
+ * @author Justin Chen, Colin Witt
+ * @version 1.0.0
+ */
+
 final class ChatServer {
     private static int uniqueId = 0;
     private final List<ClientThread> clients = new ArrayList<>();
