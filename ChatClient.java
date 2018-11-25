@@ -5,6 +5,13 @@ import java.net.Socket;
 import java.util.Scanner;
 import java.util.ArrayList;
 
+/**
+ * ChatClient class, client that connects to ChatServer, takes user input and displays it on server, also listens for
+ * server output
+ * @author Colin Witt, Justin Chen
+ * @version 1.0.0
+ * 
+ */
 final class ChatClient {
     private ObjectInputStream sInput;
     private ObjectOutputStream sOutput;
