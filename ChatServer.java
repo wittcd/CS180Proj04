@@ -15,13 +15,6 @@ final class ChatServer {
     private final int port;
     private String badwords;
 
-    //TODO
-    // - Error handling - Fixed error when client starts without server running, can't test Username handling right now so I'll get back to it later
-    // - chat filtering - Done, but can't figure out relative path for some reason
-    // - personal messages
-    // - list
-
-
 
     private ChatServer(int port, String badwords) {
         this.port = port;
@@ -76,7 +69,6 @@ final class ChatServer {
         server.start();
     }
 
-
     /*
      * This is a private class inside of the ChatServer
      * A new thread will be created to run this every time a new client connects.
@@ -96,27 +88,26 @@ final class ChatServer {
                 sOutput = new ObjectOutputStream(socket.getOutputStream());
                 sInput = new ObjectInputStream(socket.getInputStream());
                 username = (String) sInput.readObject();
+                boolean uniqueUser = false;
+                int c = 1;
+                String name = username;
+                while (!uniqueUser) {
+                    uniqueUser = true;
+                    for (int x = 0; x < clients.size(); x++) {
+                        if (clients.get(x).username.equals(name)) {
+                            uniqueUser = false;
+                            name = username + "(" + c + ")";
+                            c++;
+                        }
+                    }
+                }
+                username = name;
+                SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
+                Date d = new Date();
+                String time = f.format(d);
+                System.out.println(time + " " + username + " just connected");
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
-            }
-        }
-        private synchronized void broadcast(String message) {
-            ChatFilter cf = new ChatFilter(badwords);
-            for (int x = 0; x < clients.size(); x++) {
-                try {
-                    clients.get(x).writeMessage(cf.filter(message));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        private synchronized void remove(int id) {
-            for (int i = 0; i < clients.size(); i++) {
-                if (clients.get(i).id == id) {
-                    clients.remove(i);
-                    break;
-                }
             }
         }
 
@@ -134,13 +125,42 @@ final class ChatServer {
         private boolean writeMessage(String msg) {
             if (!socket.isConnected()) {
                 return false;
-            } else {
-                try {
-                    sOutput.writeObject(msg);
-                } catch (Exception e) {
-                    e.printStackTrace();
+
+            }
+            try {
+                sOutput.writeObject(msg);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return true;
+        }
+
+        private synchronized void broadcast(String message) {
+            for (int x = 0; x < clients.size(); x++) {
+                boolean write = clients.get(x).writeMessage(message);
+                if (!write) {
+                    this.remove(x);
                 }
                 return true;
+            }
+        }
+
+
+
+        private synchronized void remove(int id) {
+            for (int i = 0; i < clients.size(); i++) {
+                if (clients.get(i).id == id) {
+                    clients.remove(i);
+                    break;
+                }
+            }
+        }
+
+        private synchronized void list(ClientThread caller) {
+            for (int x = 0; x < clients.size(); x++) {
+                if (clients.get(x).id != caller.id) {
+                    caller.writeMessage(clients.get(x).username);
+                }
             }
         }
 
@@ -157,9 +177,37 @@ final class ChatServer {
                     e.printStackTrace();
                 }
                 if (cm.getMessage().toLowerCase().equals("/logout")) {
+                    SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
+                    Date d = new Date();
+                    String time = f.format(d);
+                    System.out.println(time + " " + username + " disconnected with a LOGOUT message.");
                     remove(this.id);
                     close();
                     break;
+                } else if (cm.getMessage().toLowerCase().equals("/list")) {
+                    list(this);
+                } else if (cm.getMessage().length() > 5 && cm.getMessage().toLowerCase().substring(0, 5).equals("/msg ")) {
+                    String[] s = cm.getMessage().split(" ");
+                    if (s.length >= 3) {
+                        SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
+                        Date d = new Date();
+                        String time = f.format(d);
+                        String recipient = s[1];
+                        String msg = "";
+                        for (int x = 2; x < s.length; x++) {
+                            msg += s[x];
+                            if (x < s.length - 1) {
+                                msg += " ";
+                            }
+                        }
+                        for (int x = 0; x < clients.size(); x++) {
+                            if (clients.get(x).username.equals(recipient)) {
+                                clients.get(x).writeMessage(time + " " + username + " -> " + recipient + ": " + msg);
+                                System.out.println(time + " " + username + " -> " + recipient + ": " + msg);
+                                this.writeMessage(time + " " + username + " -> " + recipient + ": " + msg);
+                            }
+                        }
+                    }
                 } else {
                     SimpleDateFormat f = new SimpleDateFormat("HH:mm:ss");
                     Date d = new Date();
