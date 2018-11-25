@@ -141,7 +141,6 @@ final class ChatServer {
                 if (!write) {
                     this.remove(x);
                 }
-                return true;
             }
         }
 
